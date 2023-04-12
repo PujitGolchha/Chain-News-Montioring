@@ -1,3 +1,3 @@
-automatize\__pycache__
-configuration\__pycache__
-sql_app\__pycache__
+/automatize/__pycache__
+/configuration/__pycache__
+/sql_app/__pycache__
