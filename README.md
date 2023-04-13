@@ -178,6 +178,7 @@ We present the results of our model in the following table. Here we experiment w
 | Model |	Recall Score |	Precision |F1-score|
 | ------------| ------------| ------------|------------|
 | Baseline | 0.36	| 0.04 | 0.07|
+| XG-boost w/w Meta-Cost @r=5, m=50 | 0.1 | 0.53 | 0.17 |
 | Support Vector Classification (SVC)| 0.72	| 0.05 | 0.09|
 | SVC w/w Meta-Cost| 0.98	| 0.02 | 0.04|
 | Log. Regression w/w Boosting, n=30 embeding_dim = 300 | 0.80	| 0.09 | 0.17 |
