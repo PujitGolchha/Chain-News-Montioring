@@ -169,7 +169,7 @@ Preprocessing performs removal of punctuations, numbers and additional white spa
 
 Input into the classifier is a document embedding for the content of each article. Document embedding are created by computing the mean of word2vec embedding of words in the content. Dense vector embeddings are created using the Google News Vectors. The embeddings are computed using a word2vec model pre-trained on Google News Corpus (containing 3 billion running words). The model outputs dense vector representation with d=300. 
 
-Next we applied PCA, for dimensionality reduction. Empirically, we found n=100 produces the best accuracy scores. We present the results in 
+Next we applied PCA, for dimensionality reduction. Empirically, we found n=100 produces the best accuracy scores. We present the results in the table below 
 
 The model itself perform binary classification. Given document features, the model outputs 1 if law violations are not mentioned else it predicts 0. We defined the model’s purpose to be an efficient, coarse filter to remove obviously irrelevant articles. Therefore, we require a high recall score, to avoid missing relevant articles. For this purpose, we used the logistic-regression based classifier with boosting. This is an ensemble learning method where the base model is trained iteratively, with each iteration model assigning higher weights to misclassified instances. On prediction time, weighted average from all models is used to determine the final prediction. 
 
