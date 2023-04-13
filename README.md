@@ -157,8 +157,30 @@ screen -r Screen ID
 If you need any more information about screen commands you can refer to  (https://linuxize.com/post/how-to-use-linux-screen/)
 
 
+## Description of Key components
 
+### Law Violations Classifier
 
+We implement a logistic-regression based classifier with boosting. The classifier is used distinguish between new articles talking about law violations. The pipeline for the classifier is as follows:
+
+[Insert pipeline]
+
+Preprocessing performs removal of punctuations, numbers and additional white spaces. Additionaly, stopwords are removed following tokenisation. Note tokenisation and stop word removal is performed using the NLTK library.
+
+Input into the classifier is a document embedding for the content of each article. Document embedding are created by computing the mean of word2vec embedding of words in the content. Dense vector embeddings are created using the Google News Vectors. The embeddings are computed using a word2vec model pre-trained on Google News Corpus (containing 3 billion running words). The model outputs dense vector representation with d=300. 
+
+Next we applied PCA, for dimensionality reduction. Empirically, we found n=100 produces the best accuracy scores. We present the results in 
+
+The model itself perform binary classification. Given document features, the model outputs 1 if law violations are not mentioned else it predicts 0. We defined the model’s purpose to be an efficient, coarse filter to remove obviously irrelevant articles. Therefore, we require a high recall score, to avoid missing relevant articles. For this purpose, we used the logistic-regression based classifier with boosting. This is an ensemble learning method where the base model is trained iteratively, with each iteration model assigning higher weights to misclassified instances. On prediction time, weighted average from all models is used to determine the final prediction. 
+
+We present the results of our model in the following table. Here we experiment with PCA dimension size. Additionally, ’New data’ presents the results of the trained model on extended dataset. 
+
+| Model |	Recall Score |	Precision |F1-score|
+| ------------| ------------| ------------|------------|
+| Baseline | 0.36	| 0.04 | 0.07|
+| Support Vector Classification (SVC)| 0.72	| 0.05 | 0.09|
+| SVC w/w Meta-Cost| 0.98	| 0.02 | 0.04|
+| Log. Regression w/w Boosting, n=30 embeding_dim = 300 | 0.80	| 0.09 | 0.17 |
 
 ## Access to VM:
 
