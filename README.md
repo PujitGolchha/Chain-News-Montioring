@@ -15,6 +15,12 @@
 - Gensim (Python Library)
 - Google News Vectors (https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit?resourcekey=0-wjGZdNAUop6WykTtMip30g)
 
+### Location Extractor:
+- Spacy (Python Library)
+- bert-base-NER (https://huggingface.co/dslim/bert-base-NER)
+- geopy (Python Library for querying openstreetmap)
+
+
 ### Database:
 - MariaDB
 - Sqlite
@@ -63,6 +69,17 @@ Once this done you need to create a Database, in our case we named it "ChainNews
 
 #### Relevant Article
 
+| Column name |	Column type |	Description |
+| ------------| ------------| ------------|
+| id	        | String, Primary Key	| GUID or URL of the article |
+| ts	| String |	Timestamp |
+|	source| String | The link to the article |
+| title	 | String |	The title of the article |
+| content	| String | The content of the RSS feed |
+| RSS |	String | Link to the RSS feeds |
+| label |	Integer	0 or 1 | (0: non relevant article, 1: relevant article). Relevance in our case is defined by whether the article talks about a potential la violation or not.|
+
+#### Locations
 
 | Column name |	Column type |	Description |
 | ------------| ------------| ------------|
@@ -74,20 +91,6 @@ Once this done you need to create a Database, in our case we named it "ChainNews
 |	Country| String | Country of the identified location |
 |	State| String | State of the identified location |
 |	City| String | City of the identified location |
-
-#### Locations
-
-
-| Column name |	Column type |	Description |
-| ------------| ------------| ------------|
-| id	        | String, Primary Key	| GUID or URL of the article |
-| ts	| String |	Timestamp |
-|	source| String | The link to the article |
-| title	 | String |	The title of the article |
-| content	| String | The content of the RSS feed |
-| RSS |	String | Link to the RSS feeds |
-| label |	Integer	0 or 1 | (0: non relevant article, 1: relevant article). Relevance in our case is defined by whether the article talks about a potential la violation or not.|
-
 
 ### Running and hosting the API
 To run the Fast API, simply run the main.py script. This hosts the API locally on the VM (on port=9001). This can be done using:
@@ -209,7 +212,7 @@ First we use two pretrained named entity recognisers namely dslim/bert-base-NER 
 The union of the results from these models are further processed to get details only upto a city granularity level. We compare the locations identified to 3 carefully curated dictionaries using data from the repository https://github.com/dr5hn/countries-states-cities-database. The 3 dictionaries consist details at the city, state and country level. If any of locations identified are already present in these dictionaries we store their information directly. 
 We start comparing at the city level and then move to state level and then country level. For mutliple cities with the same name, we also look up for the country and the state in the locations identified and only store the details if atleast one of them is present. Similarly, for mutliple states with the same name, we also look up for the country in the locations identified and only store the details if the country is present.
 
-For those locations not present in any of the 3 dictionaries we query the OpenStreetMap a free open source geographic day=tabase to check if the location is valid or not and also to get details of that locations at the city, state or country granularity level whichever applicable. We also update our dictionaries if the identified places are not already present in our dictionaries so that the next time we identify these places we are not querying the  openstreetmap api. 
+For those locations not present in any of the 3 dictionaries we query the OpenStreetMap a free open source geographic day=tabase to check if the location is valid or not and also to get details of that locations at the city, state or country granularity level whichever applicable. We also update our dictionaries if the identified places are not already present in our dictionaries so that the next time we identify these places we are not querying the openstreetmap api. 
 
 Finally we drop duplicate entries at the state and country level for each article to avoid any redundancy. 
 
