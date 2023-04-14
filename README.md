@@ -173,7 +173,7 @@ Next we applied PCA, for dimensionality reduction. Empirically, we found n=100 p
 
 The model itself perform binary classification. Given document features, the model outputs 1 if law violations are not mentioned else it predicts 0. We defined the model’s purpose to be an efficient, coarse filter to remove obviously irrelevant articles. Therefore, we require a high recall score, to avoid missing relevant articles. For this purpose, we used the logistic-regression based classifier with boosting. This is an ensemble learning method where the base model is trained iteratively, with each iteration model assigning higher weights to misclassified instances. On prediction time, weighted average from all models is used to determine the final prediction. 
 
-We present the results of our model in the following table. Here we experiment with PCA dimension size. Additionally, ’New data’ presents the results of the trained model on extended dataset. The Baseline model is a simple keyword model, which marks articles relevant if a keyword is present. The keyword corpus is compiled through 100 frequent words occuring in the relevant articles. Meta-cost is a risk based prediction algorithm which augments model prediction based on the risk associated with incorrectly predicting the class.
+We present the results of our model in the following table. Here we experiment with PCA dimension size. Additionally, ’New data’ presents the results of the trained model on extended dataset. The Baseline model is a simple keyword model, which marks articles relevant if a keyword is present. The keyword corpus is compiled through 100 most frequent words occuring in the relevant articles. Meta-cost is a risk based prediction algorithm which augments model prediction based on the risk associated with incorrectly predicting the class.
 
 | Model |	Recall Score |	Precision |F1-score|
 | ------------| ------------| ------------|------------|
@@ -182,6 +182,7 @@ We present the results of our model in the following table. Here we experiment w
 | Support Vector Classification (SVC)| 0.72	| 0.05 | 0.09|
 | SVC w/w Meta-Cost| 0.98	| 0.02 | 0.04|
 |Log. Regression w/w Boosting, n=30 embeding_dim = 300 | 0.80| 0.09| 0.17|
+|Log. Regression w/w Boosting, n=30 embeding_dim = 300 (New Data) | 0.88| 0.17| 0.28|
 
 ## Access to VM:
 
