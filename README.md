@@ -91,6 +91,8 @@ Once this done you need to create a Database, in our case we named it "ChainNews
 |	Country| String | Country of the identified location |
 |	State| String | State of the identified location |
 |	City| String | City of the identified location |
+|	country_code| String | ISO code of identified country |
+|	state_code| String | ISO code of identified state |
 
 ### Running and hosting the API
 To run the Fast API, simply run the main.py script. This hosts the API locally on the VM (on port=9001). This can be done using:
@@ -205,7 +207,8 @@ We present the results of our model in the following table. Here we experiment w
 
 ### Location Extractor
 
-In order to know more about the coverage of our system and the areas that are impacted by violations at any given time, we develop a location extractor to identify the sites referenced in the article. The location extractor's pipeline consists of mutliple steps to correctly identify legtimate locations only upto a granularity level of a city. 
+In order to know more about the coverage of our system and the areas that are impacted by violations at any given time, we develop a location extractor to identify the sites referenced in the article. Note: We only tag the articles from the Osapien database and not the articles being scraped by our system daily.
+The location extractor's pipeline consists of mutliple steps to correctly identify legtimate locations only upto a granularity level of a city. 
 
 First we use two pretrained named entity recognisers namely dslim/bert-base-NER which is a fine-tuned BERT model that is ready to use for Named Entity Recognition and en_core_web_sm from Spacy a open-source Natural Language Processing library that can be used for various tasks. It has built-in methods for Named Entity Recognition. Spacy has a fast statistical entity recognition system. 
 
