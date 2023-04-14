@@ -59,7 +59,23 @@ pip install -r requirements.txt
 ### Database Server Setup
 
 To setup a MariaDb server follow the instructions mentioned here (https://www.digitalocean.com/community/tutorials/how-to-install-mariadb-on-ubuntu-18-04).
-Once this done you need to create a Database, in our case we named it "ChainNewsMonitoring" and create a table to store the scraped data. In our case it is the "Relevant Article". You need to create the table with the following schema:
+Once this done you need to create a Database, in our case we named it "ChainNewsMonitoring" and create tables to store the scraped news articles as well as the locations extracted. In our case we store the news articles in the ```Relevant Article``` table and the locations extracted in the ```Locations``` table . You need to create the tables with the following schema:
+
+#### Relevant Article
+
+
+| Column name |	Column type |	Description |
+| ------------| ------------| ------------|
+| id	        | int, Primary Key	| Counter variable  |
+| RSS |	String | Link to the RSS feeds |
+| ts	| String |	Timestamp |
+|	Latitude| String | Latitude of the identified location |
+|	Longitude| String |Longitude of the identified location |
+|	Country| String | Country of the identified location |
+|	State| String | State of the identified location |
+|	City| String | City of the identified location |
+
+#### Locations
 
 
 | Column name |	Column type |	Description |
@@ -74,7 +90,7 @@ Once this done you need to create a Database, in our case we named it "ChainNews
 
 
 ### Running and hosting the API
-To run the Fast API, simply run the main.py script. This hosts the API locally on the VM (on port=9000). This can be done using:
+To run the Fast API, simply run the main.py script. This hosts the API locally on the VM (on port=9001). This can be done using:
 
 ```
 python3 main.py 
@@ -134,9 +150,9 @@ The scraper will run everday and create mutiple dictionary of dictionaries files
 Note: Do not delete the files for the past 5 days as the scraper looks up those files and only scrapes those articles which are not part of these files.
 
 
-### Feeding the scraped articles into the database
+### Populating the database
 
-Similar to the scraper the articles scraped can be fed into the database everyday at a specified time (can be changed in the automatize/post_into_db.py file). The port in which the database is hosted should also be updated in this file.
+Similar to the scraper, the posting of articles scraped, extraction of locations and posting of location data into the database can be done everyday at a specified time (which can be changed in the automatize/post_into_db.py file). The port in which the database is hosted should also be updated in this file.
 
 You can then start another screen and run the following command:
 ```
@@ -183,6 +199,21 @@ We present the results of our model in the following table. Here we experiment w
 | SVC w/w Meta-Cost| 0.98	| 0.02 | 0.04|
 |Log. Regression w/w Boosting, n=30 embeding_dim = 300 | 0.80| 0.09| 0.17|
 |Log. Regression w/w Boosting, n=30 embeding_dim = 300 (New Data) | 0.88| 0.17| 0.28|
+
+### Location Extractor
+
+In order to know more about the coverage of our system and the areas that are impacted by violations at any given time, we develop a location extractor to identify the sites referenced in the article. The location extractor's pipeline consists of mutliple steps to correctly identify legtimate locations only upto a granularity level of a city. 
+
+First we use two pretrained named entity recognisers namely dslim/bert-base-NER which is a fine-tuned BERT model that is ready to use for Named Entity Recognition and en_core_web_sm from Spacy a open-source Natural Language Processing library that can be used for various tasks. It has built-in methods for Named Entity Recognition. Spacy has a fast statistical entity recognition system. 
+
+The union of the results from these models are further processed to get details only upto a city granularity level. We compare the locations identified to 3 carefully curated dictionaries using data from the repository https://github.com/dr5hn/countries-states-cities-database. The 3 dictionaries consist details at the city, state and country level. If any of locations identified are already present in these dictionaries we store their information directly. 
+We start comparing at the city level and then move to state level and then country level. For mutliple cities with the same name, we also look up for the country and the state in the locations identified and only store the details if atleast one of them is present. Similarly, for mutliple states with the same name, we also look up for the country in the locations identified and only store the details if the country is present.
+
+For those locations not present in any of the 3 dictionaries we query the OpenStreetMap a free open source geographic day=tabase to check if the location is valid or not and also to get details of that locations at the city, state or country granularity level whichever applicable. We also update our dictionaries if the identified places are not already present in our dictionaries so that the next time we identify these places we are not querying the  openstreetmap api. 
+
+Finally we drop duplicate entries at the state and country level for each article to avoid any redundancy. 
+
+
 
 ## Access to VM:
 
