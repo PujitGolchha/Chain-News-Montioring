@@ -32,6 +32,7 @@
 - Ngrok (https://ngrok.com/)
 
 
+![alt text](https://github.com/PujitGolchha/Chain-News-Montioring/blob/main/images/Technolgies%20Used.png)
 ## API Documentation:
 The documentation for the Fast Api endpoints is available at 
 (https://8970-2001-7c0-2900-8050-5652-ff-fe00-18.eu.ngrok.io/docs)
@@ -83,8 +84,9 @@ Once this done you need to create a Database, in our case we named it "ChainNews
 
 | Column name |	Column type |	Description |
 | ------------| ------------| ------------|
-| id	        | int, Primary Key	| Counter variable  |
+| ID	        | int, Primary Key	| Counter variable  |
 | RSS |	String | Link to the RSS feeds |
+| RssID |	String | GUID or URL of the article |
 | ts	| String |	Timestamp |
 |	Latitude| String | Latitude of the identified location |
 |	Longitude| String |Longitude of the identified location |
@@ -184,7 +186,8 @@ If you need any more information about screen commands you can refer to  (https:
 
 We implement a logistic-regression based classifier with boosting. The classifier is used distinguish between new articles talking about law violations. The pipeline for the classifier is as follows:
 
-[Insert pipeline]
+
+![alt text](https://github.com/PujitGolchha/Chain-News-Montioring/blob/main/images/Classifier%20Pipeline.png)
 
 Preprocessing performs removal of punctuations, numbers and additional white spaces. Additionaly, stopwords are removed following tokenisation. Note tokenisation and stop word removal is performed using the NLTK library.
 
