@@ -95,9 +95,7 @@ class RelevantArticleRepo:
             .filter(models.RelevantArticle.RSS.in_(newSourcesInTimePeriod))\
             .filter(or_(models.RelevantArticle.RSS.like("%http%"),models.RelevantArticle.RSS.like("%https%")))\
             .group_by(models.RelevantArticle.RSS).order_by(desc('Avg_Hit_Rate'))\
-            .having(and_((func.count(models.RelevantArticle.label) > total),text(f"Avg_Hit_Rate > {hitRateThreshold}".format(hitRateThreshold)))).all()
-        
-        
+            .having(and_((func.count(models.RelevantArticle.label) > total),text(f"Avg_Hit_Rate > {hitRateThreshold}".format(hitRateThreshold)))).all() 
         return query
     
     def sourceMetricsDelta(db: Session, start, end, hitRateThreshold, total):
@@ -110,6 +108,7 @@ class RelevantArticleRepo:
         
         newSourcesInTimePeriod = [item['new_sources'] for item in newSourcesInTimePeriod]
         
+    
 
         query = db.query(models.RelevantArticle.RSS, func.sum(models.RelevantArticle.label).label("Total_1"),
             (func.count(models.RelevantArticle.label) - func.sum(models.RelevantArticle.label)).label("Total_0"),
@@ -120,8 +119,6 @@ class RelevantArticleRepo:
             .filter(or_(models.RelevantArticle.RSS.like("%http%"),models.RelevantArticle.RSS.like("%https%")))\
             .group_by(models.RelevantArticle.RSS).order_by(desc('Avg_Hit_Rate'))\
             .having(and_((func.count(models.RelevantArticle.label) > total),text(f"Avg_Hit_Rate > {hitRateThreshold}".format(hitRateThreshold)))).all()
-    
-        
         return query
 
 
@@ -146,14 +143,17 @@ class RelevantArticleRepo:
 class LocationsRepo:
 
     async def create(db: Session, location: schemas.LocationsBase):
-        db_item = models.Locations(ID= location.ID, 
+        db_item = models.Locations(ID= location.ID,
+                                   RssID= location.RssID, 
                                    ts=location.ts,
                                          RSS=location.RSS,
                                          Latitude=location.Latitude,
                                          Longitude=location.Longitude,
                                          Country=location.Country,
                                          State=location.State,
-                                         City=location.City
+                                         City=location.City,
+                                         country_code = location.country_code,
+                                         state_code = location.state_code
                                          )
         db.add(db_item)
         db.commit()
@@ -182,4 +182,20 @@ class LocationsRepo:
     
     def num_entries(db: Session):
         return db.query(func.max(models.Locations.ID).label("max")).first()
+    
+    def agg_location_count(db: Session, zoom):
+        if zoom == 'state':
+            return db.query(models.Locations.RSS, models.Locations.State, 
+                            models.Locations.Country, models.Locations.country_code, 
+                            models.Locations.state_code, func.count(models.Locations.State).label('State_counts'))\
+            .group_by(models.Locations.State, models.Locations.Country).all()
+        elif zoom == 'country':
+            return db.query(models.Locations.RSS, 
+                            models.Locations.Country, models.Locations.country_code, 
+                            func.count(models.Locations.Country).label('Country_counts'))\
+            .group_by(models.Locations.Country).all()
+        else:
+            return 0
+
+
 

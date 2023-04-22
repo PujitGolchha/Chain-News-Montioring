@@ -23,6 +23,7 @@ class RelevantArticle(Base):
 class Locations(Base):
     __tablename__ = "Locations"
     ID = Column(Integer, primary_key=True)
+    RssID = Column(String, nullable=True)
     ts = Column(Float, nullable=False)
     RSS = Column(String, nullable=False)
     Latitude = Column(Float, nullable=True)
@@ -30,6 +31,8 @@ class Locations(Base):
     Country = Column(String, nullable=True)
     State = Column(String, nullable=True)
     City = Column(String, nullable=True)
+    country_code = Column(String, nullable=True)
+    state_code = Column(String, nullable=True)
 
 
 

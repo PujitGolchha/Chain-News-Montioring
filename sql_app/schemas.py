@@ -32,9 +32,13 @@ class LocationsBase(BaseModel):
     ID: int
     ts: float
     RSS: str
+    RssID: Optional[str] = None
+
     
     Latitude: Optional[float] = None
     Longitude: Optional[float] = None
     Country: Optional[str] = None
     State: Optional[str] = None
     City: Optional[str] = None
+    country_code: Optional[str] = None
+    state_code: Optional[str] = None

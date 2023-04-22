@@ -1,4 +1,7 @@
 import sys
+sys.path.append('/home/ayadav/ArticleAPI')
+sys.path.append('/home/ayadav/ArticleAPI/automatize')
+sys.path.append('/home/ayadav/ArticleAPI/configuration/')
 
 from fastapi import FastAPI
 import sql_app.models as models
@@ -19,19 +22,14 @@ import pickle
 import requests
 import datetime as datetime
 
-# BASE_URL = 'http://127.0.0.1:9001/items'
 
-def download_file(path):
-    with open(path, 'rb') as f:
-        loaded_dict = pickle.load(f)
-    return loaded_dict
-
-def object_as_dict(obj):
-    return {c.key: getattr(obj, c.key)
-            for c in inspect(obj).mapper.column_attrs}
 
 app = create_db.get_app()
 
+
+"""
+Source Metrics Endpoints
+"""
 
 @app.exception_handler(Exception)
 def validation_exception_handler(request, err):
@@ -133,18 +131,6 @@ def get_articles_from_source(name: str, db: Session = Depends(get_db)):
     # return name
 
 
-@app.get('/item/{item_id}', tags=["Article"])
-def get_item_by_id(item_id: str, db: Session = Depends(get_db)):
-    """
-    Get the Store with the given ID provided by User stored in database
-    """
-    db_store = RelevantArticleRepo.fetch_by_id(db, item_id)
-    if db_store is None:
-        raise HTTPException(status_code=404, detail="Store not found with the given ID")
-    for items in db_store:
-    	return object_as_dict(items)
-
-
 @app.get('/getArticles/from={date_start}_to={date_end}', tags=["Article"])
 def get_articles_between_start_and_end_date(date_start: str ,date_end: str, db: Session = Depends(get_db)):
     return RelevantArticleRepo.fetch_articles_between_dates(db,date_start,date_end)
@@ -152,14 +138,16 @@ def get_articles_between_start_and_end_date(date_start: str ,date_end: str, db: 
 
 @app.delete('/deleteItem/', tags=["Article"])
 async def delete_item_by_id(item_id: Optional[str] = None, db: Session = Depends(get_db)):
-    """
-    Delete the Item with the given ID provided by User stored in database
-    """
     db_item = RelevantArticleRepo.fetch_by_id(db, item_id)
     if db_item is None:
         raise HTTPException(status_code=404, detail="Item not found with the given ID")
     await RelevantArticleRepo.delete(db, item_id)
     return "Item deleted successfully!"
+
+
+"""
+Location Endpoint
+"""
 
 @app.post('/locations', tags=["Location"])
 async def post_locations_to_db(list_item_request: List[schemas.LocationsBase], db: Session = Depends(get_db)):
@@ -172,7 +160,7 @@ def get_num_entries_in_locations(db: Session = Depends(get_db)):
 
 
 @app.get('/locations/', tags=["Location"])
-def get_all_locations(source: Optional[str] = None, db: Session = Depends(get_db)):
+def get_all_locations(source: Optional[str] = None, limit: Optional[int] = 100, db: Session = Depends(get_db)):
     """
     Get all the Items stored in database
     """
@@ -182,7 +170,7 @@ def get_all_locations(source: Optional[str] = None, db: Session = Depends(get_db
         items.append(db_item)
         return items
     else:
-        return LocationsRepo.fetch_all(db)
+        return LocationsRepo.fetch_all(db, limit=limit)
     
 @app.get('/locations_between/', tags=["Location"])
 def get_locations_between_time_period(start: Union[None, str] = None, end: Union[None, str] = None, db: Session = Depends(get_db)):
@@ -200,3 +188,12 @@ def get_locations_between_time_period(start: Union[None, str] = None, end: Union
    
     else:
         raise HTTPException(status_code=420, detail="Initialise start for Time-scale Location Metrics")
+
+@app.get('/agg_locations/', tags=['Location'])
+def aggregate_sources_by_location(scale: Union[None, str]= None, db: Session = Depends(get_db)):
+    if scale == 'state':
+        return LocationsRepo.agg_location_count(db, scale)
+    elif scale == 'country':
+        return LocationsRepo.agg_location_count(db, scale)
+    else:
+        raise HTTPException(status_code=410, detail="Incorrect scale argument: scale == city or scale")

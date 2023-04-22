@@ -15,7 +15,7 @@ import nltk
 import dateutil.parser
 
 
-#### Embedding Creation helper ####
+
 try:
     lemmatizer = WordNetLemmatizer()
     stop_words = list(stopwords.words('english'))
@@ -40,6 +40,7 @@ model_path="GoogleNews-vectors-negative300.bin"
 w2v_model = models.KeyedVectors.load_word2vec_format(model_path, binary=True)
 print("Loaded successfully 2")
 
+#### Embedding Creation helper ####
 def document_vector(doc):
     # remove out-of-vocabulary words
     doc = [word for word in doc if word in w2v_model.index_to_key]
@@ -65,8 +66,6 @@ def preprocessing(document):
     return doc
 
 # Clean df col. without tokenizing
-
-
 def cleanContent(document):
     stop_words = list(stopwords.words('english'))
     # Remove punctuation and numbers
@@ -82,8 +81,6 @@ def cleanContent(document):
     return doc
 
 #### Classifier Helper ####
-
-
 def output_metrics(true, pred):
     # precision tp / (tp + fp)
     precision = precision_score(true, pred)

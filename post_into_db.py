@@ -21,7 +21,7 @@ def download_file(path):
         loaded_dict = pickle.load(f)
     return loaded_dict
 
-
+"""Function to parse data from Osapiens Api into list of lists"""
 def parse_raw_string(raw_string):
   data=[]
   for rowno,i in enumerate(tqdm(raw_string.split("\r\n"))):
@@ -59,6 +59,7 @@ def parse_raw_string(raw_string):
 
 
 
+"""Function to extract locations from a given file i.e. list of dictionaries"""
 def le(file,file_path):
     logging.basicConfig(filename="location.log",format="%(asctime)s %(message)s",encoding="utf-8",level=logging.INFO,filemode='w')
     location_list=[]
@@ -68,19 +69,28 @@ def le(file,file_path):
     oldcountrylen=len(location_finder.countries_dict)
     for count,j in enumerate(tqdm(file)):
         fl=""
-        locations=location_finder.location_recogniser(j["content"])
-        fl=location_finder.final_locations(locations,j["id"])
-        
-        if fl.empty==True:
+        if j["content"]!="" and j["content"]!=None:
+            locations=location_finder.location_recogniser(j["content"])
+            fl=location_finder.final_locations(locations,j["id"])
+            if fl.empty==True:
+                locations=location_finder.location_recogniser(j["title"])
+                fl=location_finder.final_locations(locations,j["id"])
+            if fl.empty==False:
+                fl["RSS"]=j["RSS"]
+                fl["ts"]=j["ts"]
+                fl["RssID"]=j["id"]
+                fl=fl.to_dict('records')
+                location_list=location_list+fl
+        else:
             locations=location_finder.location_recogniser(j["title"])
             fl=location_finder.final_locations(locations,j["id"])
+            if fl.empty==False:
+                fl["RSS"]=j["RSS"]
+                fl["ts"]=j["ts"]
+                fl["RssID"]=j["id"]
+                fl=fl.to_dict('records')
+                location_list=location_list+fl
         
-        if fl.empty==False:
-            fl["RSS"]=j["RSS"]
-            fl["ts"]=j["ts"]
-            fl=fl.to_dict('records')
-            location_list=location_list+fl
-
     location_list=pd.DataFrame(location_list)
     location_list.columns
     #location_list.drop_duplicates(subset=['Country', 'State', 'City','RSS', 'ts'],inplace=True)
@@ -99,7 +109,7 @@ def le(file,file_path):
     return location_list
 
 
-
+"""Function to post articles as well as locations extracted into db"""
 def posting():
     logging.basicConfig(filename="posting.log",
                         format="%(asctime)s %(message)s",
@@ -112,8 +122,7 @@ def posting():
     print(latest_file)
     list_of_articles = download_file(latest_file)
     
-    
-    print("Starting posting for articles")
+    print("Starting posting")
     for j in tqdm(list_of_articles):
         j["label"]=int(j["label"])
             
@@ -123,39 +132,42 @@ def posting():
         except:
             z=0
         if z==410:
-            #print("item id ", j["id"]," exists in db")
             logging.info("item id %s exists in db",j["id"])
-            pass
-        
+            pass       
     print("Posting done")
 
     print("Getting locations data")
     start = str((datetime.now()- timedelta(days= 1)).timestamp()*1000)
     end = str(datetime.now().timestamp()*1000)
     
-    #url for data from Osapiens
-    url =""
-    
-    
+    url = f"https://preprod.osapiens.cloud/data/integration/supplier-os-hub/supplier-os-data-provider/ExternalNewsExport?username=discovery-system-uni-mannheim@osapiens.com&password=CRHcb4i7uiNKHuA4E&type=ALL&from={start}&to={end}"
     raw_string = requests.get(url).text
+
+    print("Parsing locations data")
     loc_data = parse_raw_string(raw_string)
-    header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label']
-    loc_data=pd.DataFrame(loc_data, columns=header)
-    loc_data.drop(len(loc_data)-1,axis=0,inplace=True)
-    loc_data=loc_data[~((loc_data["title"].isna()) & (loc_data["content"].isna()))]
-    loc_data=loc_data.to_dict("records")
+    try:
+        header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label']
+        loc_data_df=pd.DataFrame(loc_data, columns=header)
+    except:
+        header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label','Extra_column']
+        loc_data_df=pd.DataFrame(loc_data, columns=header)
+       
+    loc_data_df.drop(len(loc_data_df)-1,axis=0,inplace=True)
+    loc_data_df=loc_data_df[~((loc_data_df["title"].isna()) & (loc_data_df["content"].isna()))]
+    loc_data_df=loc_data_df.to_dict("records")
+
+    loc_data_file_path=f"locations/locationdata_{start}&to={end}.pkl"
+    upload_file(loc_data_file_path, loc_data_df)
     
     print("Extracting locations")
-    
-    file_path=f"locations/location_{start}&to={end}"
-    locations_extracted=le(loc_data,file_path)
+    file_path=f"locations/location_{start}&to={end}.pkl"
+    locations_extracted=le(loc_data_df,file_path)
     
     print("Starting posting of locations")
     maxVal = requests.get('http://127.0.0.1:9001/numLocations').json()['max']
     
     if maxVal==None:
         maxVal=0
-    
     
     for j in tqdm(locations_extracted):
         j['ID'] =  maxVal + 1
@@ -168,7 +180,7 @@ def posting():
             pass
 
     
-schedule.every().day.at("05:00").do(posting)
+schedule.every().day.at("23:00").do(posting)
 while True:
     schedule.run_pending()
     time.sleep(10)

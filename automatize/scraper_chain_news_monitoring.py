@@ -53,11 +53,6 @@ headers = {
 
 #actual_date = datetime.now().strftime("%d" + "." + "%m" + "." + "%Y")
 
-BASE_PATH = '/home/ayadav'
-# BASE_PATH = '
-#SAVE_PATH = os.getcwd()
-#PATH_DICTIONARY = SAVE_PATH + "/../data/dictionary_of_dictionary_" + actual_date + ".pkl"
-#PATH_LIST = SAVE_PATH + "/../data/list_of_dictionary_" + actual_date + ".pkl"
 
 """ Detect and Translate Text to English """
 def detect_english(text):
@@ -70,7 +65,7 @@ def detect_english(text):
          return True
 
 def translate_text(text, target= 'en'):
-    TRANSLATE_API_PATH = "/home/pujit/my-translation-sa-key.json"
+    TRANSLATE_API_PATH = ""
     translate_client = translate.Client.from_service_account_json(TRANSLATE_API_PATH)
     result = translate_client.translate(text, target_language=target)
     # out = {}
@@ -79,7 +74,7 @@ def translate_text(text, target= 'en'):
     return result["translatedText"]
 
 
-
+""" Detect and Translate Text to English - newer version based on ensemble of translators """
 def translate_text_2(text):
   source=detect(text)
   try:
@@ -117,7 +112,6 @@ def translate_text_2(text):
 
 """Parsing the "description" of the item"""
 
-
 def parse_item(description):
     d_soup = BeautifulSoup(description.text, 'html.parser')
     try:
@@ -134,14 +128,13 @@ def parse_item(description):
 
 """Verify the match between tags of RSS-Feeds and general storage header name"""
 
-
 def verifyMatch(match, text):
     if re.search(str(match), text.lower()):
         return True
     else:
         return False
 
-
+"""Function to check if Url is available in on synonymn fields"""
 def verifyMatchURL(text):
     synonymURL = ['url', 'link', 'source']
     for tag in text:
@@ -151,7 +144,7 @@ def verifyMatchURL(text):
 
     return None
 
-
+"""Function to check if Date is available in on synonymn fields"""
 def verifyMatchDate(text):
     synonymDate = ['date', 'published']
     for tag in text:
@@ -163,8 +156,6 @@ def verifyMatchDate(text):
 
 
 """Find tags name of the RSS-Feeds"""
-
-
 def findAllTags(soup):
     listItem = []
     for tag in soup.find_all("item"):
@@ -176,6 +167,8 @@ def findAllTags(soup):
 def getAllTags(item):
     return [tag.name for tag in item.find_all()]
 
+
+"""Function to convert Date to Unix"""
 def date_converter_to_unix(ts):
   try:
     return datetime.strptime(ts,"%Y-%m-%d").timestamp()*1000
@@ -185,17 +178,15 @@ def date_converter_to_unix(ts):
 
 
 pca_file_name ="automatize/pca_2nd_version.pkl"
-# pca_file_name = BASE_PATH + "pca.pkl"
 with open(pca_file_name, 'rb') as file:
     pca = pickle.load(file)
 
 model_file_name ="automatize/SGDClassifier_2nd_version.pkl"
-# model_file_name = BASE_PATH + "SGDClassifier.pkl"
 with open(model_file_name, 'rb') as file:
     model = pickle.load(file)
 
 
-# function for predicting label
+""" function for predicting label"""
 def prediction(title, content):
     global model
     global pca
@@ -204,7 +195,6 @@ def prediction(title, content):
         doc_Embedding = helper.document_vector(content)
         doc_Embedding2 = list(doc_Embedding) + \
             list(pca.transform(doc_Embedding.reshape(1, -1))[0])
-        #print(doc_Embedding)
         label = model.predict(np.array(doc_Embedding2).reshape(1, -1))
         return label[0]
     except:
@@ -220,7 +210,6 @@ def prediction(title, content):
 
 
 """Extract/Parse the items values of the RSS-Feeds in form of a dictionary"""
-
 def get_list_items(list_item, x, tags, rss_link, latest_ids):
     items = {}
     synonym_url = verifyMatchURL(tags)
@@ -313,8 +302,6 @@ def get_list_items(list_item, x, tags, rss_link, latest_ids):
     return items
     
 """Reading the links of RSS-Feeds"""
-
-
 def scraper_RSS_Feeds_Dict(links):
     folder_path=r"data"
     latest_ids=get_latest_article_ids(folder_path)
@@ -354,9 +341,8 @@ def scraper_RSS_Feeds_Dict(links):
 
     return dict_of_dict
 
-
+"""function to convert dict_of_dicts to list_of_dicts"""
 def scraper_RSS_Feeds_List(dict_of_dicts):
-    # creating a list of dictionaries
     list_of_dicts = []
     for i, j in tqdm(dict_of_dicts.items()):
         k = j
@@ -378,7 +364,9 @@ def download_file(path):
     with open(path, 'rb') as f:
         loaded_dict = pickle.load(f)
     return loaded_dict
+    
 
+"""get ids of articles scraped in the last 5 days"""
 def get_latest_article_ids(folder_path):
     list_of_files = glob.glob(folder_path+"/list_of_dictionary_*")
     last_n_modified_files=[]
@@ -393,7 +381,7 @@ def get_latest_article_ids(folder_path):
 
 
 
-
+"""Extract/Parse the items values of the Google-News Feeds in form of a dictionary"""
 def scraperGoogleNews():
     print("Starting google news scraping")
 
@@ -469,9 +457,9 @@ def scraperGoogleNews():
         # break
     return(list_of_dicts)
 
-
+"""Main function to start scraping process everyday- Called in automation.py"""
 def scraper():
-    SAVE_PATH = "data"
+    SAVE_PATH = r"data"
     actual_date = datetime.now().strftime("%d" + "." + "%m" + "." + "%Y")
     PATH_DICTIONARY = SAVE_PATH + "/dictionary_of_dictionary_" + actual_date
     PATH_LIST = SAVE_PATH + "/list_of_dictionary_" + actual_date + ".pkl"
@@ -480,26 +468,19 @@ def scraper():
     logging.info(str(actual_date))
     logging.info("Scraper has started.")
 
-    with open(BASE_PATH + "automatize/links.pkl", "rb") as jfile:
+    with open("automatize/links.pkl", "rb") as jfile:
       links = pickle.load(jfile)
     print(f"Scraping total {len(links)} no of rss feeds")
-    #links = links[0:50]
-    #links=['https://www.livehindustan.com/home/rssfeed/1.html',
-    #        'https://thecaribbeancamera.com/feed/',
-    #        'https://khn.org/topics/pharmaceuticals/feed/',
-    #        'https://www.morebikes.co.uk/feed/',
-    #        'https://raznonews.ru/feed/',
-    #        'https://www.nbcchicago.com/?rss=y',
-    #        'https://www.fnlondon.com/rss']
+   
     logging.info(str(f"Scraping total {len(links)}  no of rss feeds"))
     listPath = list()
     j = 0
     for i in range(1000, len(links), 1000):
-    	links1 = links[j: i]
-    	dict_of_dicts = scraper_RSS_Feeds_Dict(links1)
-    	upload_file(PATH_DICTIONARY + str(j) + "_" + str(i) + ".pkl", dict_of_dicts)
-    	listPath.append(PATH_DICTIONARY + str(j) + "_" + str(i) + ".pkl")
-    	j = i
+        links1 = links[j: i]
+        dict_of_dicts = scraper_RSS_Feeds_Dict(links1)
+        upload_file(PATH_DICTIONARY + str(j) + "_" + str(i) + ".pkl", dict_of_dicts)
+        listPath.append(PATH_DICTIONARY + str(j) + "_" + str(i) + ".pkl")
+        j = i
     try:
       links1 = links[j: len(links)]
       dict_of_dicts = scraper_RSS_Feeds_Dict(links1)
@@ -507,10 +488,11 @@ def scraper():
       listPath.append(PATH_DICTIONARY + str(j) + "_" + str(len(links)) + ".pkl")
     except:
     	pass
+    
     dict_of_dicts = dict()
     for path in listPath:
-    	actualPath = download_file(path)
-    	dict_of_dicts = {**dict_of_dicts, **actualPath}
+        actualPath = download_file(path)
+        dict_of_dicts = {**dict_of_dicts, **actualPath}
 
     
     list_of_dicts = scraper_RSS_Feeds_List(dict_of_dicts)
