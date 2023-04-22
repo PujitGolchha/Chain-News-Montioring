@@ -9,6 +9,7 @@ import time
 import pandas as pd
 import location_finder
 from datetime import datetime, timedelta
+import re
 print("Loaded all packages")
 
 
@@ -23,45 +24,54 @@ def download_file(path):
 
 """Function to parse data from Osapiens Api into list of lists"""
 def parse_raw_string(raw_string):
-  data=[]
-  for rowno,i in enumerate(tqdm(raw_string.split("\r\n"))):
-    text=''
-    a=[]
-    #z is indicator variable if the string contains ""
-    z=False
-    for j in i.split(","):
-      #some columns may be empty
-      if j!="":
-        #accounting for ""
-        #we continue concatenating all parts to the text until we encounter another"
-        if j[0]=='"' or z==True:
-          text=text+j
-          z=True
-        else:
-          a.append(j)
-        try:
-          if j[-1]=='"' and j[-2]!='"':
-            a.append(text)
-            text=''
-            z=False
-        except:
-          if j[-1]=='"':
-            a.append(text)
-            # print(rowno)
-            # print(text)
-            text=''
-            z=False
-      else:
-        a.append("")
-    data.append(a)
-  return data
+    #replacing "\r\n" before a quote with empty string 
+    raw_string=raw_string.replace('\r\n"','"')
+
+    #replacing "\r\n" occuring more than 1 time together with empty string
+    raw_string=re.sub(r'(\r\n){2,}',"",raw_string)
+
+    #replacing any character except (, and any digit) followed by "\r\n" with only the character
+    raw_string=re.sub(r'([^,\d])\r\n', r'\1',raw_string)
+
+    data=[]
+    for rowno,i in enumerate(tqdm(raw_string.split("\r\n"))):
+        text=''
+        a=[]
+        #z is indicator variable if the string contains ""
+        z=False
+        for j in i.split(","):
+            #some columns may be empty
+            if j!="":
+            #accounting for ""
+            #we continue concatenating all parts to the text until we encounter another"
+                if j[0]=='"' or z==True:
+                    text=text+j
+                    z=True
+                else:
+                    a.append(j)
+                try:
+                    if j[-1]=='"' and j[-2]!='"':
+                        a.append(text)
+                        text=''
+                        z=False
+                except:
+                    if j[-1]=='"':
+                        a.append(text)
+                        print(rowno)
+                        print(text)
+                        text=''
+                        z=False
+            else:
+                a.append("")
+        data.append(a)
+    return data
 
 
 
 
 """Function to extract locations from a given file i.e. list of dictionaries"""
 def le(file,file_path):
-    logging.basicConfig(filename="location.log",format="%(asctime)s %(message)s",encoding="utf-8",level=logging.INFO,filemode='w')
+    #logging.basicConfig(filename="location.log",format="%(asctime)s %(message)s",encoding="utf-8",level=logging.INFO,filemode='w')
     location_list=[]
     print(file_path)
     oldcitylen=len(location_finder.city_dict)
@@ -122,6 +132,8 @@ def posting():
     print(latest_file)
     list_of_articles = download_file(latest_file)
     
+    
+    
     print("Starting posting")
     for j in tqdm(list_of_articles):
         j["label"]=int(j["label"])
@@ -149,8 +161,17 @@ def posting():
         header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label']
         loc_data_df=pd.DataFrame(loc_data, columns=header)
     except:
-        header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label','Extra_column']
-        loc_data_df=pd.DataFrame(loc_data, columns=header)
+        print("extra column found, error in parsing")
+        try:
+            header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label','Extra_column']
+            loc_data_df=pd.DataFrame(loc_data, columns=header)
+        except:
+            header = ['id', 'ts', 'lang', 'RSS', 'title', 'content', 'label','Extra_column']
+            loc_data_df=pd.DataFrame(loc_data)
+            columns_to_add=len(loc_data_df.columns)-len(header)
+            columns_to_add=[i for i in range(0,columns_to_add)]
+            header=header+columns_to_add
+            loc_data_df=pd.DataFrame(loc_data,columns=header)
        
     loc_data_df.drop(len(loc_data_df)-1,axis=0,inplace=True)
     loc_data_df=loc_data_df[~((loc_data_df["title"].isna()) & (loc_data_df["content"].isna()))]
@@ -176,8 +197,11 @@ def posting():
         try:
             requests.post('http://127.0.0.1:9001/locations', json=x)
         except:
-            print("item id ", j["ID"]," exists in db")
+            print("Error in id ", j["RssID"],"while extracting locations")
+            logging.info("Error in id %s while extracting locations",j["RssID"])
             pass
+    
+    print("Posting of Loactions done")
 
     
 schedule.every().day.at("23:00").do(posting)
